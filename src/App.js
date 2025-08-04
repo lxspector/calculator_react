@@ -1,11 +1,23 @@
-import React from 'react'
-import Calculator from './Calculator'
+import React, { Suspense } from 'react'
 import styles from './App.module.css'
+
+// Lazy load the Calculator component for code splitting
+const Calculator = React.lazy(() => import('./Calculator'))
+
+// Simple loading component
+const LoadingSpinner = () => (
+  <div className={styles.loading}>
+    <div className={styles.spinner}></div>
+    <p>Loading Calculator...</p>
+  </div>
+)
 
 function App() {
   return (
     <div className={styles.App}>
-      <Calculator />
+      <Suspense fallback={<LoadingSpinner />}>
+        <Calculator />
+      </Suspense>
     </div>
   )
 }

@@ -1,21 +1,21 @@
-import React, { useState } from 'react'
+import React, { useState, useCallback, useMemo } from 'react'
 import styles from './App.module.css'
 
-function Calculator() {
+const Calculator = React.memo(() => {
   const [firstValue, setFirstValue] = useState('')
   const [secondValue, setSecondValue] = useState('')
   const [operator, setOperator] = useState(null)
   const [isResultShown, setIsResultShown] = useState(false)
 
-  const handleButtonClick = (value) => {
+  const handleButtonClick = useCallback((value) => {
     if (operator) {
-      setSecondValue(secondValue + value)
+      setSecondValue(prev => prev + value)
     } else {
-      setFirstValue(firstValue + value)
+      setFirstValue(prev => prev + value)
     }
-  }
+  }, [operator])
 
-  const handleOperatorClick = (op) => {
+  const handleOperatorClick = useCallback((op) => {
     if (isResultShown) {
       setIsResultShown(false)
       setSecondValue('')
@@ -23,16 +23,16 @@ function Calculator() {
     if (firstValue && !secondValue) {
       setOperator(op)
     }
-  }
+  }, [isResultShown, firstValue, secondValue])
 
-  const handleReset = () => {
+  const handleReset = useCallback(() => {
     setFirstValue('')
     setSecondValue('')
     setOperator(null)
     setIsResultShown(false)
-  }
+  }, [])
 
-  const handleEqual = () => {
+  const handleEqual = useCallback(() => {
     if (!firstValue || !operator || !secondValue) return
 
     let result
@@ -46,43 +46,43 @@ function Calculator() {
     setSecondValue('')
     setIsResultShown(true)
     setOperator(null)
-  }
+  }, [firstValue, operator, secondValue])
 
-  const displayValue = () => {
+  const displayValue = useMemo(() => {
     if (isResultShown) return firstValue
     return `${firstValue}${operator || ''}${secondValue}`
-  }
+  }, [firstValue, operator, secondValue, isResultShown])
+
+  const displayStyle = useMemo(() => ({
+    color: isResultShown ? 'blue' : 'black'
+  }), [isResultShown])
+
+  const numbers = useMemo(() => [...Array(10).keys()], [])
 
   return (
     <div className={styles.container}>
       <div
         className={styles.display}
-        style={{ color: isResultShown ? 'blue' : 'black' }}
+        style={displayStyle}
       >
-        {displayValue() || '0'}
+        {displayValue || '0'}
       </div>
       <div className={styles.buttons}>
-        {[...Array(10).keys()].map((num) => (
-          <button
+        {numbers.map((num) => (
+          <NumberButton
             key={num}
-            className={styles.button}
-            onClick={() => handleButtonClick(String(num))}
-          >
-            {num}
-          </button>
+            number={num}
+            onClick={handleButtonClick}
+          />
         ))}
-        <button
-          className={`${styles.button} ${styles.operator}`}
-          onClick={() => handleOperatorClick('+')}
-        >
-          +
-        </button>
-        <button
-          className={`${styles.button} ${styles.operator}`}
-          onClick={() => handleOperatorClick('-')}
-        >
-          -
-        </button>
+        <OperatorButton
+          operator="+"
+          onClick={handleOperatorClick}
+        />
+        <OperatorButton
+          operator="-"
+          onClick={handleOperatorClick}
+        />
         <button
           className={`${styles.button} ${styles.equals}`}
           onClick={handleEqual}
@@ -98,6 +98,41 @@ function Calculator() {
       </div>
     </div>
   )
-}
+})
+
+// Memoized sub-components to prevent unnecessary re-renders
+const NumberButton = React.memo(({ number, onClick }) => {
+  const handleClick = useCallback(() => {
+    onClick(String(number))
+  }, [number, onClick])
+
+  return (
+    <button
+      className={styles.button}
+      onClick={handleClick}
+    >
+      {number}
+    </button>
+  )
+})
+
+const OperatorButton = React.memo(({ operator, onClick }) => {
+  const handleClick = useCallback(() => {
+    onClick(operator)
+  }, [operator, onClick])
+
+  return (
+    <button
+      className={`${styles.button} ${styles.operator}`}
+      onClick={handleClick}
+    >
+      {operator}
+    </button>
+  )
+})
+
+Calculator.displayName = 'Calculator'
+NumberButton.displayName = 'NumberButton'
+OperatorButton.displayName = 'OperatorButton'
 
 export default Calculator
